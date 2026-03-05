@@ -8,11 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install any needed packages, using --no-cache-dir for efficiency
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt && rm -rf ~/.cache/pip
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
 
 # Define the command to run the application when the container starts
-CMD ["python", "app.py"]
+CMD ["streamlit", "run", "app.py"]
  
