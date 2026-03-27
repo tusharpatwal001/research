@@ -1,0 +1,43 @@
+use_default_settings: true
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "change_this_to_a_random_string"
+
+search:
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true
+
+engines:
+  - name: google
+    engine: google
+    disabled: false
+
+  - name: bing
+    engine: bing
+    disabled: false
+
+  - name: brave
+    engine: brave
+    disabled: false
+
+  # 📰 News engines
+  - name: google_news
+    engine: google_news
+    disabled: false
+    categories: news
+
+  - name: bing_news
+    engine: bing_news
+    disabled: false
+    categories: news
+
+  - name: yahoo_news
+    engine: yahoo_news
+    disabled: false
+    categories: news
