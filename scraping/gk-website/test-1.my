@@ -1,0 +1,58 @@
+from pydantic import BaseModel, Field
+from langchain_ollama import ChatOllama
+from typing import Literal
+
+data = {
+    "question": "143. भारत में वृक्षारोपण उत्सव जिसे 'वन महोत्सव' के नाम से जाना जाता है, के जन्मदाता कौन हैं ? ",
+    "option_1": "(A)   जवाहरलाल नेहरू",
+    "option_2": "(B)  विनोबा भावे",
+    "option_3": "(C) के. एम. मुंशी",
+    "option_4": "(D) महात्मा गाँधी",
+    "answer": "(C) के. एम. मुंशी",
+}
+
+
+class Schema(BaseModel):
+    description: str
+    level: Literal["hard", "medium", "beginner"]
+
+
+model = ChatOllama(model="gemma3:1b")
+
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt_template = ChatPromptTemplate.from_template(
+    """Here is the question and its answer:
+{question} -> {answer}
+
+Instructions:
+- Explain clearly in Hindi why the answer is correct.
+- The explanation MUST be at least 50 words long.
+- Do not give less than 50 words.
+- Keep the explanation simple and easy to understand.
+
+Also:
+- Rate the difficulty level as one of: Beginner, Medium, or Hard.
+
+Output format:
+Reason (Hindi): <at least 50 words explanation>
+Difficulty: <Beginner/Medium/Hard>
+"""
+)
+
+chain = prompt_template | model.with_structured_output(Schema)
+
+response = chain.invoke({"question": data['question'], "answer":data['answer']})
+
+print(response)
+
+# output
+{
+    "description": "वन महोत्सव (वन महोत्सव) भारत में वृक्षारोपण उत्सव को जन्म देने वाले व्यक्तियों के बारे में एक बहुत ही महत्वपूर्ण सवाल है। यह उत्सव 1861 में भारत के phosphoryl region में 'कुंत्र महोत्सव' के रूप में शुरू हुआ था, जिसे 'वन महोत्सव' के नाम से भी जाना जाता है। इस उत्सव का उद्देश्य वृक्षों को बचाने और उनका सम्मान करने के लिए लोगों को इकट्ठा होना और वृक्षों की स्थापना करना था। यह एक महत्वपूर्ण सामाजिक और धार्मिक आयोजन था, जो भारत में वृक्षों के महत्व को मजबूत करने और पर्यावरण संरक्षण के लिए एक साझा भावना पैदा करने में महत्वपूर्ण भूमिका निभाता था। इसलिए, ‘वन महोत्सव’ की उत्पत्ति 'के.एम. मुंशी' नामक एक व्यक्ति के कार्य के कारण हुई, जो इस उत्सव के संस्थापक थे।",
+    "level": "medium",
+}
+
+{
+    "description": "वन महोत्सव (Vān Mahotsav) भारत में वृक्षारोपण उत्सव का जन्मदाता के. एम. मुंशी है। यह उत्सव 1861 में हुआ था, जब भारत के पहले प्रधानमंत्री और राजनेता के. एम. मुंशी ने वृक्षारोपण और बागवानी को प्रोत्साहित करने के लिए एक महत्वपूर्ण कदम उठाया। इस उत्सव का उद्देश्य लोगों को बागवानी और वृक्ष लगाने के महत्व को समझाना था, जो कि भारत के विकास और समृद्धि के लिए महत्वपूर्ण था।  के. एम. मुंशी ने इस उत्सव को एक महत्वपूर्ण सामाजिक और सांस्कृतिक कार्यक्रम के रूप में स्थापित किया, जिससे भारत में बागवानी को बढ़ावा मिला और वृक्षारोपण के प्रति जागरूकता बढ़ी। यह एक ऐसा अवसर था जहाँ लोगों को प्रकृति के साथ जुड़ने और उन्हें सशक्त बनाने का मौका मिला।",
+    "level": "medium",
+}
