@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Streamlit App Code - Product News Finder (SearXNG)</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        margin: 40px;
+        background: #f8f9fa;
+        color: #212529;
+        line-height: 1.6;
+      }
+      pre {
+        background: #212529;
+        color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+      code {
+        background: #e9ecef;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #0d6efd;
+      }
+      .note {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 6px solid #ffc107;
+        margin: 20px 0;
+      }
+      .button {
+        background: #0d6efd;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>✅ Your Streamlit App is ready!</h1>
+    <p>
+      Here’s a complete, ready-to-run Streamlit application that does exactly
+      what you asked for:
+    </p>
+    <ul>
+      <li>Takes multiple products as input (one per line)</li>
+      <li>
+        Searches <strong>SearXNG</strong> in the <strong>news</strong> category
+      </li>
+      <li>Fetches the latest news for each product</li>
+      <li>
+        Displays everything in a beautiful, interactive
+        <strong>pandas DataFrame</strong>
+      </li>
+      <li>Clickable links, published dates, sources, etc.</li>
+    </ul>
+
+    <div class="note">
+      <strong>Before running:</strong><br />
+      1. Install dependencies: <code>pip install streamlit pandas requests</code
+      ><br />
+      2. Save the code below as <code>app.py</code><br />
+      3. Run: <code>streamlit run app.py</code><br />
+      4. In the sidebar, paste a public SearXNG instance (see recommended list
+      below)
+    </div>
+
+    <h2>Recommended Public SearXNG Instances (all support JSON + news)</h2>
+    <p>
+      Go to
+      <a href="https://searx.space/" target="_blank">https://searx.space</a> for
+      the full live list (68+ online instances with uptime %). Good stable ones
+      right now:
+    </p>
+    <ul>
+      <li><code>https://search.rhscz.eu/</code> (100% uptime)</li>
+      <li><code>https://searxng.site/</code> (very reliable)</li>
+      <li><code>https://searx.rhscz.eu/</code></li>
+    </ul>
+    <p>Just copy-paste any of these into the app’s sidebar.</p>
+
+    <h2>Full Code (app.py)</h2>
+    <pre><code>import streamlit as st
+import requests
+import pandas as pd
+from datetime import datetime
+
+st.set_page_config(page_title="Product News Finder", page_icon="📰", layout="wide")
+
+st.title("📰 Product News Finder with SearXNG")
+st.markdown("Enter products → get the **latest news** from SearXNG → displayed in a clean DataFrame.")
+
+# ====================== SIDEBAR CONFIG ======================
+st.sidebar.header("⚙️ Settings")
+
+searxng_url = st.sidebar.text_input(
+    "SearXNG Instance URL",
+    value="https://search.rhscz.eu/",
+    help="Paste any public instance from https://searx.space/"
+)
+
+time_range = st.sidebar.selectbox(
+    "Latest news time range",
+    options=["", "day", "week", "month", "year"],
+    index=2,  # default = month
+    help="Blank = no filter (most recent first)"
+)
+
+num_results = st.sidebar.slider(
+    "News items per product",
+    min_value=1,
+    max_value=10,
+    value=5,
+    help="How many news articles to fetch per product"
+)
+
+st.sidebar.markdown("---")
+st.sidebar.info("Public instances have rate limits. Keep the number of products small.")
+
+# ====================== MAIN INPUT ======================
+st.subheader("Enter your products")
+products_input = st.text_area(
+    "One product per line (e.g. iPhone 17, Tesla Cybertruck, Sony WF-1000XM6)",
+    height=150,
+    placeholder="iPhone 17\nSamsung Galaxy S25\nSony WH-1000XM6\n..."
+)
+
+if st.button("🔍 Search Latest News", type="primary", use_container_width=True):
+    if not products_input.strip():
+        st.warning("Please enter at least one product.")
+    elif not searxng_url.strip().endswith("/"):
+        st.error("SearXNG URL must end with a slash (/)")
+    else:
+        products = [p.strip() for p in products_input.split("\n") if p.strip()]
+        
+        st.info(f"Searching news for **{len(products)}** product(s) on SearXNG...")
+        
+        all_news = []
+        progress_bar = st.progress(0)
+        
+        base_url = searxng_url.rstrip("/") + "/search"
+        
+        for i, product in enumerate(products):
+            params = {
+                "q": product,
+                "categories": "news",
+                "format": "json",
+                "pageno": 1
+            }
+            if time_range:
+                params["time_range"] = time_range
+            
+            try:
+                with st.spinner(f"Fetching news for **{product}**..."):
+                    resp = requests.get(base_url, params=params, timeout=15)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    
+                    results = data.get("results", [])[:num_results]
+                    
+                    for r in results:
+                        # Robust field extraction (different engines return slightly different keys)
+                        published = (
+                            r.get("publishedDate") or
+                            r.get("date") or
+                            r.get("published_date") or
+                            r.get("age") or
+                            "N/A"
+                        )
+                        
+                        snippet = r.get("content") or r.get("snippet") or "No snippet available"
+                        source = r.get("source") or r.get("engine") or "Unknown"
+                        
+                        all_news.append({
+                            "Product": product,
+                            "Title": r.get("title", "No title"),
+                            "URL": r.get("url", "#"),
+                            "Snippet": snippet[:280] + "..." if len(snippet) > 280 else snippet,
+                            "Published": published,
+                            "Source": source
+                        })
+            
+            except Exception as e:
+                st.error(f"Failed to fetch news for **{product}**: {e}")
+            
+            # Update progress
+            progress_bar.progress((i + 1) / len(products))
+        
+        progress_bar.empty()
+        
+        if all_news:
+            df = pd.DataFrame(all_news)
+            
+            # Make URL column clickable
+            st.dataframe(
+                df,
+                column_config={
+                    "URL": st.column_config.LinkColumn(
+                        "News Link",
+                        help="Click to open the full article",
+                        display_text="Open Article →"
+                    ),
+                    "Snippet": st.column_config.TextColumn("Snippet", width="large"),
+                    "Published": st.column_config.TextColumn("Published", width="medium"),
+                },
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            # Optional download button
+            csv = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Download as CSV",
+                data=csv,
+                file_name=f"product_news_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+            
+            st.success(f"✅ Found {len(all_news)} news articles across {len(products)} products!")
+        else:
+            st.warning("No news found. Try a different time range or check the SearXNG instance.")
+
+st.caption("Built for you with ❤️ using Streamlit + SearXNG. Public instances may have occasional rate limits.")
+</code></pre>
+
+    <h2>How to run it</h2>
+    <ol>
+      <li>Open your terminal</li>
+      <li><code>pip install streamlit pandas requests</code></li>
+      <li>
+        Copy the entire code above into a file named <strong>app.py</strong>
+      </li>
+      <li>Run <code>streamlit run app.py</code></li>
+      <li>Open the link shown in your browser</li>
+    </ol>
+
+    <p>
+      That’s it! You now have a fully functional Streamlit app that searches
+      latest news on any products via SearXNG and shows them in a professional
+      DataFrame.
+    </p>
+
+    <p>
+      Want any extra features (e.g. caching, email alerts, dark mode, charts of
+      news volume)? Just reply and I’ll add them instantly.
+    </p>
+  </body>
+</html>
